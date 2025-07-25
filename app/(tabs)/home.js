@@ -61,7 +61,7 @@ const Home = () => {
     const fetchCategories = async () => {
       try {
         const response = await axios.get(
-          `${Constants.expoConfig.extra.API_URL}/admin/get-all-categories`
+          `http://10.0.2.2:8080/admin/get-all-categories`
         );
         if (response.data.success) {
           setCategories(response.data.data);
@@ -80,7 +80,7 @@ const Home = () => {
     const fetchItems = async () => {
       try {
         const response = await axios.get(
-          `${Constants.expoConfig.extra.API_URL}/admin/get-all-items`
+          `http://10.0.2.2:8080/admin/get-all-items`
         );
         if (response.data.success) {
           setItems(response.data.data);

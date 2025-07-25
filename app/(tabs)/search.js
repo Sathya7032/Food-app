@@ -31,7 +31,7 @@ const Search = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${Constants.expoConfig.extra.API_URL}/admin/get-all-categories`);
+        const response = await fetch(`http://10.0.2.2:8080/admin/get-all-categories`);
         const data = await response.json();
         if (data.success) {
           setCategories([{ id: 'all', name: 'All' }, ...data.data]);
@@ -48,10 +48,10 @@ const Search = () => {
       setLoading(true);
       let response;
       if (activeCategory === 'All') {
-        response = await fetch(`${Constants.expoConfig.extra.API_URL}/admin/get-all-items`);
+        response = await fetch(`http://10.0.2.2:8080/admin/get-all-items`);
       } else {
         const categoryId = categories.find(c => c.name === activeCategory)?.id;
-        response = await fetch(`${Constants.expoConfig.extra.API_URL}/admin/items/${categoryId}`);
+        response = await fetch(`http://10.0.2.2:8080/admin/items/${categoryId}`);
       }
       const data = await response.json();
       if (data.success) {

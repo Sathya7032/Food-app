@@ -29,7 +29,6 @@ const Profile = () => {
     cancelledOrdersCount: 0,
   });
   const axiosInstance = useAxios();
-  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchProfileData = async () => {

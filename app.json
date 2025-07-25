@@ -40,7 +40,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "API_URL": "http://ec2-13-204-45-107.ap-south-1.compute.amazonaws.com:8080"
+      "API_URL": "http://10.0.2.2:8080"
     }
   }
 }

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuthStore } from './useAuthStore';
 import Constants from 'expo-constants';
 
-const BASE_URL = Constants.expoConfig.extra.API_URL; // Same backend URL
+const BASE_URL = 'http://10.0.2.2:8080'; // Same backend URL
 
 const useAxios = () => {
   const { token } = useAuthStore.getState();

@@ -10,12 +10,18 @@ import {
   Alert,
   FlatList,
 } from "react-native";
-import { Ionicons, MaterialIcons, FontAwesome, AntDesign } from "@expo/vector-icons";
+import {
+  Ionicons,
+  MaterialIcons,
+  FontAwesome,
+  AntDesign,
+} from "@expo/vector-icons";
 import useAxios from "../auth/useAxios";
 import { useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
 import * as WebBrowser from "expo-web-browser";
 import RazorpayCheckout from "react-native-razorpay";
+import { router } from "expo-router";
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -29,7 +35,7 @@ const CartPage = () => {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [cartId, setCartId] = useState(null);
   const AxiosConfig = useAxios();
-  
+
   const navigation = useNavigation();
   const rzpKey = "rzp_test_aImlfafFbJKRYb"; // Replace with your actual Razorpay key
 
@@ -40,7 +46,8 @@ const CartPage = () => {
 
       // Fetch cart data
       const cartResponse = await AxiosConfig.get("/customer/get-customer-cart");
-      const { cartValue, discountValue, customerName, items, id } = cartResponse.data.data;
+      const { cartValue, discountValue, customerName, items, id } =
+        cartResponse.data.data;
 
       // Fetch addresses
       const addressResponse = await AxiosConfig.get(
@@ -75,8 +82,8 @@ const CartPage = () => {
       );
 
       // Optimistic update
-      setCartItems(prevItems =>
-        prevItems.map(item =>
+      setCartItems((prevItems) =>
+        prevItems.map((item) =>
           item.id === id ? { ...item, orderQuantity: newQuantity } : item
         )
       );
@@ -97,10 +104,10 @@ const CartPage = () => {
     try {
       setUpdating(true);
       await AxiosConfig.delete(`/customer/remove-product/${id}`);
-      
+
       // Optimistic update
-      setCartItems(prevItems => prevItems.filter(item => item.id !== id));
-      
+      setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
+
       // Refresh cart data to get updated values
       await fetchCartData();
     } catch (err) {
@@ -119,92 +126,90 @@ const CartPage = () => {
   const total = totalBeforeDiscount - discountValue;
 
   const handleCheckout = async () => {
-  if (!selectedAddress) {
-    Alert.alert("Error", "Please select a shipping address.");
-    return;
-  }
-
-  try {
-    // 1. Create the order in your backend
-    const orderRequest = {
-      cartId: cartId,
-      addressId: selectedAddress
-    };
-    
-    const orderResponse = await AxiosConfig.post("/customer/place-order", orderRequest);
-    const orderData = orderResponse.data.data;
-
-    if (!orderData) {
-      throw new Error("Failed to create order");
+    if (!selectedAddress) {
+      Alert.alert("Error", "Please select a shipping address.");
+      return;
     }
 
-    // 2. Initialize Razorpay checkout
-    const options = {
-      description: `Order #${orderData.orderId}`,
-      image: "https://your-logo-url.com/logo.png",
-      currency: "INR",
-      key: rzpKey,
-      amount: orderData.totalAmount * 100,
-      name: "Your App Name",
-      order_id: orderData.razorpayOrderId, // From your backend
-      prefill: {
-        email: "customer@email.com", // Get from user profile
-        contact: "9199999999",       // Get from user profile
-        name: customerName
-      },
-      theme: { color: "#ff6b6b" }
-    };
+    try {
+      const orderRequest = {
+        cartId: cartId,
+        addressId: selectedAddress,
+      };
 
-    // 3. Open Razorpay checkout
-    const razorpay = new RazorpayCheckout(options);
-    
-    razorpay.open("payment.success", async (response) => {
-      try {
-        // 4. Verify payment with your backend
-        const verificationResponse = await AxiosConfig.post("/customer/verify-payment", {
-          razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_order_id: response.razorpay_order_id,
-          razorpay_signature: response.razorpay_signature,
-          orderId: orderData.orderId // Your internal order ID
-        });
-
-        if (verificationResponse.data.success) {
-          Alert.alert(
-            "Success", 
-            "Payment verified! Your order is confirmed.",
-            [{ text: "OK", onPress: () => navigation.navigate("Orders") }]
-          );
-        } else {
-          throw new Error("Payment verification failed");
-        }
-      } catch (verifyError) {
-        console.error("Verification error:", verifyError);
-        Alert.alert(
-          "Warning",
-          "Payment succeeded but verification failed. Please check your orders.",
-          [{ text: "OK", onPress: () => navigation.navigate("Orders") }]
-        );
-      }
-    });
-
-    razorpay.on("payment.failed", (response) => {
-      console.error("Payment failed:", response);
-      Alert.alert(
-        "Payment Failed",
-        response.error.description || "Payment could not be completed"
+      const orderResponse = await AxiosConfig.post(
+        "/customer/place-order",
+        orderRequest
       );
-    });
+      const orderData = orderResponse.data.data;
 
-    razorpay.open();
+      if (!orderData) {
+        throw new Error("Failed to create order");
+      }
 
-  } catch (err) {
-    console.error("Checkout error:", err);
-    Alert.alert(
-      "Error",
-      err.response?.data?.message || "Failed to process payment"
-    );
-  }
-};
+      const options = {
+        description: `Order #${orderData.orderId}`,
+        image:
+          "https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg",
+        currency: "INR",
+        key: rzpKey,
+        amount: orderData.totalAmount * 100,
+        name: "Food app",
+        order_id: orderData.razorpayOrderId,
+        prefill: {
+          email: "customer@email.com",
+          contact: "9199999999",
+          name: customerName,
+        },
+        theme: { color: "#ff6b6b" },
+      };
+
+      RazorpayCheckout.open(options)
+        .then(async (response) => {
+          console.log("✅ Payment Successful!");
+          console.log("razorpay_order_id:", orderData.razorpayOrderId);
+          console.log("razorpay_payment_id:", response.razorpay_payment_id);
+          console.log("razorpay_signature:", response.razorpay_signature);
+          const verificationResponse = await AxiosConfig.post(
+            "/customer/verify-payment",
+            null,
+            {
+              params: {
+              orderId: orderData.razorpayOrderId,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+              }
+            }
+          );
+         
+          
+            Alert.alert(
+              "Success",
+              "Payment verified! Your order is confirmed.",
+              [{ text: "OK", onPress: () => router.push("/orders") }]
+            );
+       
+        })
+        .catch((error) => {
+          console.error("Payment failed:", error);
+          console.log(
+            orderData.razorpayOrderId,
+            response.razorpay_payment_id,
+            response.razorpay_signature
+          );
+          Alert.alert(
+            "Payment Failed",
+            error.description || "Payment could not be completed"
+          );
+        });
+    } catch (err) {
+      console.error("Checkout error:", err);
+      Alert.alert(
+        "Error",
+        err.response?.data?.message || "Failed to process payment"
+      );
+    }
+  };
 
   const renderCartItem = ({ item }) => (
     <View style={styles.cartItemCard}>
@@ -213,8 +218,8 @@ const CartPage = () => {
         <View style={styles.cartItemDetails}>
           <View style={styles.cartItemHeader}>
             <Text style={styles.itemName}>{item.name}</Text>
-            <TouchableOpacity 
-              onPress={() => removeItem(item.id)} 
+            <TouchableOpacity
+              onPress={() => removeItem(item.id)}
               disabled={updating}
             >
               {updating ? (
@@ -225,7 +230,7 @@ const CartPage = () => {
             </TouchableOpacity>
           </View>
           <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-          
+
           <View style={styles.quantityControl}>
             <TouchableOpacity
               style={styles.quantityButton}
@@ -260,13 +265,15 @@ const CartPage = () => {
     <TouchableOpacity
       style={[
         styles.addressItem,
-        selectedAddress === item.id && styles.selectedAddressItem
+        selectedAddress === item.id && styles.selectedAddressItem,
       ]}
       onPress={() => setSelectedAddress(item.id)}
     >
       <Text style={styles.addressType}>{item.addressType}</Text>
       <Text style={styles.addressText}>{item.street}</Text>
-      <Text style={styles.addressText}>{item.city}, {item.state} {item.postalCode}</Text>
+      <Text style={styles.addressText}>
+        {item.city}, {item.state} {item.postalCode}
+      </Text>
       {item.landmark && (
         <Text style={styles.addressLandmark}>Near {item.landmark}</Text>
       )}
@@ -316,8 +323,8 @@ const CartPage = () => {
             <Text style={styles.emptyCartText}>
               Looks like you haven't added anything to your cart yet
             </Text>
-            <TouchableOpacity 
-              style={styles.browseButton} 
+            <TouchableOpacity
+              style={styles.browseButton}
               onPress={() => navigation.navigate("Menu")}
             >
               <AntDesign name="arrowleft" size={16} color="white" />
@@ -328,7 +335,7 @@ const CartPage = () => {
           <FlatList
             data={cartItems}
             renderItem={renderCartItem}
-            keyExtractor={item => item.id.toString()}
+            keyExtractor={(item) => item.id.toString()}
             scrollEnabled={false}
           />
         )}
@@ -338,7 +345,7 @@ const CartPage = () => {
             <View style={styles.addressSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Delivery Address</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.addButton}
                   onPress={() => navigation.navigate("AddAddress")}
                 >
@@ -357,7 +364,7 @@ const CartPage = () => {
                 <FlatList
                   data={addresses}
                   renderItem={renderAddressItem}
-                  keyExtractor={item => item.id}
+                  keyExtractor={(item) => item.id}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                 />
@@ -373,7 +380,9 @@ const CartPage = () => {
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Delivery Fee</Text>
-                <Text style={styles.summaryValue}>${deliveryFee.toFixed(2)}</Text>
+                <Text style={styles.summaryValue}>
+                  ${deliveryFee.toFixed(2)}
+                </Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Tax (8%)</Text>
@@ -381,7 +390,9 @@ const CartPage = () => {
               </View>
               <View style={[styles.summaryRow, styles.discountRow]}>
                 <Text style={styles.discountLabel}>Discount</Text>
-                <Text style={styles.discountValue}>−${discountValue.toFixed(2)}</Text>
+                <Text style={styles.discountValue}>
+                  −${discountValue.toFixed(2)}
+                </Text>
               </View>
 
               <View style={styles.totalRow}>
@@ -392,7 +403,8 @@ const CartPage = () => {
               <TouchableOpacity
                 style={[
                   styles.checkoutButton,
-                  (updating || !selectedAddress) && styles.checkoutButtonDisabled
+                  (updating || !selectedAddress) &&
+                    styles.checkoutButtonDisabled,
                 ]}
                 disabled={updating || !selectedAddress}
                 onPress={handleCheckout}
@@ -400,7 +412,9 @@ const CartPage = () => {
                 {updating ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+                  <Text style={styles.checkoutButtonText}>
+                    Proceed to Checkout
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -410,9 +424,6 @@ const CartPage = () => {
     </View>
   );
 };
-
-
-
 
 const styles = StyleSheet.create({
   container: {
