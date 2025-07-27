@@ -4,22 +4,22 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Image,
   ActivityIndicator,
   Dimensions,
+  TouchableOpacity,
 } from "react-native";
 import {
   MaterialIcons,
-  FontAwesome,
   FontAwesome5,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import useAxios from "../auth/useAxios";
 import LottieView from "lottie-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
 
-const orders = () => {
+const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,58 +45,63 @@ const orders = () => {
   }, []);
 
   const getStatusIcon = (status) => {
+    const iconProps = { size: 20, style: styles.statusIcon };
+    
     switch (status) {
       case "PROCESSING":
         return (
           <MaterialCommunityIcons
             name="clock-time-four-outline"
-            size={24}
-            color="#FFC107"
+            color="#FFA500"
+            {...iconProps}
           />
         );
       case "ACCEPTED":
-        return <MaterialIcons name="check-circle" size={24} color="#17A2B8" />;
+        return <MaterialIcons name="check-circle" color="#4CAF50" {...iconProps} />;
       case "PREPARING":
-        return <FontAwesome5 name="utensils" size={20} color="#007BFF" />;
+        return <FontAwesome5 name="utensils" color="#2196F3" {...iconProps} />;
       case "OUT_FOR_DELIVERY":
-        return (
-          <MaterialCommunityIcons name="moped" size={24} color="#17A2B8" />
-        );
+        return <MaterialCommunityIcons name="moped" color="#00BCD4" {...iconProps} />;
       case "DELIVERED":
-        return <MaterialIcons name="check-circle" size={24} color="#28A745" />;
+        return <MaterialIcons name="check-circle" color="#4CAF50" {...iconProps} />;
       case "CANCELLED":
-        return <MaterialIcons name="cancel" size={24} color="#DC3545" />;
+        return <MaterialIcons name="cancel" color="#F44336" {...iconProps} />;
       case "REJECTED":
-        return <MaterialIcons name="cancel" size={24} color="#DC3545" />;
+        return <MaterialIcons name="cancel" color="#F44336" {...iconProps} />;
       default:
         return (
           <MaterialCommunityIcons
             name="package-variant-closed"
-            size={24}
-            color="#6C757D"
+            color="#607D8B"
+            {...iconProps}
           />
         );
     }
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "PROCESSING": return "#FFF3E0";
+      case "ACCEPTED": return "#E8F5E9";
+      case "PREPARING": return "#E3F2FD";
+      case "OUT_FOR_DELIVERY": return "#E0F7FA";
+      case "DELIVERED": return "#E8F5E9";
+      case "CANCELLED": return "#FFEBEE";
+      case "REJECTED": return "#FFEBEE";
+      default: return "#ECEFF1";
+    }
+  };
+
   const getStatusText = (status) => {
     switch (status) {
-      case "PROCESSING":
-        return "Processing";
-      case "ACCEPTED":
-        return "Accepted";
-      case "PREPARING":
-        return "Preparing";
-      case "OUT_FOR_DELIVERY":
-        return "On the way";
-      case "DELIVERED":
-        return "Delivered";
-      case "CANCELLED":
-        return "Cancelled";
-      case "REJECTED":
-        return "Rejected";
-      default:
-        return "Unknown";
+      case "PROCESSING": return "Processing";
+      case "ACCEPTED": return "Accepted";
+      case "PREPARING": return "Preparing";
+      case "OUT_FOR_DELIVERY": return "On the way";
+      case "DELIVERED": return "Delivered";
+      case "CANCELLED": return "Cancelled";
+      case "REJECTED": return "Rejected";
+      default: return "Unknown";
     }
   };
 
@@ -112,182 +117,289 @@ const orders = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ff6b6b" />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6200EE" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={48} color="#F44336" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              setLoading(true);
+              setError(null);
+              fetchOrders();
+            }}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (orders.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
-        <LottieView
-          ref={animationRef}
-          source={require("../../assets/anime/empty.json")}
-          autoPlay
-          loop
-          style={styles.animation}
-        />
-        <Text style={styles.emptyText}>No orders found</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.emptyContainer}>
+          <LottieView
+            ref={animationRef}
+            source={require("../../assets/anime/empty.json")}
+            autoPlay
+            loop
+            style={styles.animation}
+          />
+          <Text style={styles.emptyTitle}>No Orders Yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Your order history will appear here
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {orders.map((order) => (
-        <View key={order.orderId} style={styles.orderCard}>
-          <View style={styles.orderHeader}>
-            <View style={styles.statusContainer}>
-              {getStatusIcon(order.orderStatus)}
-              <Text style={styles.statusText}>
-                {getStatusText(order.orderStatus)}
-              </Text>
-            </View>
-            <Text style={styles.orderId}>Order #{order.orderId}</Text>
-            <Text style={styles.orderDate}>{formatDate(order.orderTime)}</Text>
-          </View>
-
-          <View style={styles.itemsContainer}>
-            {order.orderItemDTOS.map((item, index) => (
-              <View key={index} style={styles.itemRow}>
-                <Text style={styles.itemName}>
-                  {item.quantity}x {item.itemName}
-                </Text>
-                <Text style={styles.itemPrice}>
-                  ₹{(item.price * item.quantity).toFixed(2)}
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Text style={styles.pageTitle}>Your Orders</Text>
+        
+        {orders.map((order) => (
+          <View key={order.orderId} style={styles.orderCard}>
+            <View 
+              style={[
+                styles.statusHeader, 
+                { backgroundColor: getStatusColor(order.orderStatus) }
+              ]}
+            >
+              <View style={styles.statusContainer}>
+                {getStatusIcon(order.orderStatus)}
+                <Text style={styles.statusText}>
+                  {getStatusText(order.orderStatus)}
                 </Text>
               </View>
-            ))}
-          </View>
+              <Text style={styles.orderDate}>
+                {formatDate(order.orderTime)}
+              </Text>
+            </View>
 
-          <View style={styles.summaryContainer}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal:</Text>
-              <Text style={styles.summaryValue}>
-                ₹{order.totalAmount.toFixed(2)}
-              </Text>
+            <View style={styles.orderBody}>
+              <View style={styles.orderIdContainer}>
+                <Text style={styles.orderIdLabel}>Order ID:</Text>
+                <Text style={styles.orderId}>#{order.orderId}</Text>
+              </View>
+
+              <View style={styles.itemsContainer}>
+                {order.orderItemDTOS.map((item, index) => (
+                  <View key={index} style={styles.itemRow}>
+                    <Text style={styles.itemName}>
+                      {item.quantity}x {item.itemName}
+                    </Text>
+                    <Text style={styles.itemPrice}>
+                      ₹{(item.price * item.quantity).toFixed(2)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.summaryContainer}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Subtotal:</Text>
+                  <Text style={styles.summaryValue}>
+                    ₹{order.totalAmount.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Discount:</Text>
+                  <Text style={styles.discountValue}>
+                    -₹{order.totalDiscount.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Total Paid:</Text>
+                  <Text style={styles.totalValue}>
+                    ₹{(order.totalAmount - order.totalDiscount).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Discount:</Text>
-              <Text style={styles.discountValue}>
-                -₹{order.totalDiscount.toFixed(2)}
-              </Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total:</Text>
-              <Text style={styles.totalValue}>
-                ₹{(order.totalAmount - order.totalDiscount).toFixed(2)}
-              </Text>
-            </View>
+
+            <TouchableOpacity 
+              style={styles.detailsButton}
+              onPress={() => {
+                // Navigate to order details
+              }}
+            >
+              <Text style={styles.detailsButtonText}>View Details</Text>
+              <MaterialIcons name="chevron-right" size={20} color="#6200EE" />
+            </TouchableOpacity>
           </View>
-        </View>
-      ))}
-    </ScrollView>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
   container: {
     flex: 1,
-    backgroundColor: "#F8F8F8",
-    padding: 16,
+    backgroundColor: "#F5F5F5",
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#333",
+    marginVertical: 24,
+    marginLeft: 8,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#FFFFFF",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 24,
+    backgroundColor: "#FFFFFF",
   },
   errorText: {
-    color: "#DC3545",
+    color: "#F44336",
     fontSize: 16,
     textAlign: "center",
+    marginVertical: 16,
+  },
+  retryButton: {
+    backgroundColor: "#6200EE",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 4,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "500",
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 40,
+    backgroundColor: "#FFFFFF",
   },
-  emptyImage: {
-    width: 180,
-    height: 180,
-    opacity: 0.7,
-    marginBottom: 20,
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+    marginTop: 16,
   },
-  emptyText: {
-    fontSize: 18,
-    color: "#7f8c8d",
+  emptySubtitle: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 8,
+    textAlign: "center",
+  },
+  animation: {
+    width: width * 0.8,
+    height: width * 0.8,
   },
   orderCard: {
     backgroundColor: "white",
     borderRadius: 12,
     marginBottom: 16,
-    padding: 16,
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  orderHeader: {
-    marginBottom: 12,
+  statusHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   statusContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+  },
+  statusIcon: {
+    marginRight: 8,
   },
   statusText: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  orderId: {
     fontSize: 14,
-    color: "#2c3e50",
-    fontWeight: "bold",
+    fontWeight: "600",
+    color: "#333",
   },
   orderDate: {
     fontSize: 12,
-    color: "#95a5a6",
-    marginTop: 4,
+    color: "#666",
+  },
+  orderBody: {
+    padding: 16,
+  },
+  orderIdContainer: {
+    flexDirection: "row",
+    marginBottom: 12,
+  },
+  orderIdLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginRight: 4,
+  },
+  orderId: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
   },
   itemsContainer: {
+    borderTopWidth: 1,
+    borderTopColor: "#EEE",
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEE",
+    paddingVertical: 12,
     marginVertical: 8,
   },
   itemRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f5f5f5",
   },
   itemName: {
     fontSize: 14,
-    color: "#2c3e50",
+    color: "#333",
+    flex: 1,
   },
   itemPrice: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#2c3e50",
+    fontWeight: "500",
+    color: "#333",
+    marginLeft: 16,
   },
   summaryContainer: {
-    marginTop: 12,
+    marginTop: 8,
   },
   summaryRow: {
     flexDirection: "row",
@@ -296,15 +408,15 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: "#2c3e50",
+    color: "#666",
   },
   summaryValue: {
     fontSize: 14,
-    color: "#2c3e50",
+    color: "#333",
   },
   discountValue: {
     fontSize: 14,
-    color: "#28A745",
+    color: "#4CAF50",
   },
   totalRow: {
     flexDirection: "row",
@@ -312,27 +424,30 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "#ECF0F1",
+    borderTopColor: "#EEE",
   },
   totalLabel: {
     fontSize: 15,
-    fontWeight: "bold",
-    color: "#2c3e50",
+    fontWeight: "600",
+    color: "#333",
   },
   totalValue: {
     fontSize: 15,
-    fontWeight: "bold",
-    color: "#2c3e50",
+    fontWeight: "600",
+    color: "#333",
   },
-  animationContainer: {
+  detailsButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: height * 0.02,
-    height: height * 0.3,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#EEE",
   },
-  animation: {
-    width: width * 1,
-    height: "50%",
+  detailsButtonText: {
+    color: "#6200EE",
+    fontWeight: "500",
   },
 });
 
-export default orders;
+export default Orders;

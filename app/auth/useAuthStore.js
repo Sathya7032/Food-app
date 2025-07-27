@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants'
 import { router } from 'expo-router';
 
-const BASE_URL = "http://10.0.2.2:8080";
+const BASE_URL = "http://ec2-35-154-226-76.ap-south-1.compute.amazonaws.com:8080";
 
 export const useAuthStore = create((set, get) => ({
   // State
